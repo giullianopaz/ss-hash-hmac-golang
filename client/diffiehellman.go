@@ -35,24 +35,18 @@ type DiffieHellman struct {
 	sharedPrivateKey string
 }
 
-// GeneratepModulusValue : Escolhe um valor primo para `pModulusValue`
-func (dh *DiffieHellman) GeneratepModulusValue(ceilingValue int) {
-	fmt.Print("\n-> Generating Modulus Value... ")
-	dh.pModulusValue = ceilingValue
-	for !isPrime(dh.pModulusValue) {
-		dh.pModulusValue--
-	}
+// SetpModulusValue : Recebe o valor primo para `pModulusValue`
+func (dh *DiffieHellman) SetpModulusValue(value int) {
+	fmt.Print("\n-> Setting Modulus Value... ")
+	dh.pModulusValue = value
 	fmt.Println("OK")
 
 }
 
-// GenerategBaseValue : Escolhe um valor primo para `gBaseValue` a partir de `pModulusValue`
-func (dh *DiffieHellman) GenerategBaseValue() {
-	fmt.Print("-> Generating Base Value... ")
-	dh.gBaseValue = RAND.Intn(dh.pModulusValue)
-	for !isPrime(dh.gBaseValue) {
-		dh.gBaseValue = RAND.Intn(dh.pModulusValue)
-	}
+// SetgBaseValue : Recebe o valor primo para `gBaseValue`
+func (dh *DiffieHellman) SetgBaseValue(value int) {
+	fmt.Print("-> Setting Base Value... ")
+	dh.gBaseValue = value
 	fmt.Println("OK")
 
 }

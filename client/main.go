@@ -6,9 +6,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 )
+
+// CEILINGVALUE : Valor máximo para ser usado como `pModulusValue`
+var CEILINGVALUE int = 50
+
+// RAND : Reconfigura Seed
+var RAND *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 // Body struct to get message from JSON decoder
 type Body struct {
@@ -40,6 +47,16 @@ func main() {
 	flag.IntVar(&nMessages, "n_messages", 100, "Quantidade de Mensagens a serem enviadas")
 	flag.StringVar(&alg, "alg", "diffie-hellman", "Agoritmo para gerar a chave compartilhada")
 	flag.Parse()
+
+	var dh DiffieHellman
+	dh.SetpModulusValue(47)
+	dh.SetgBaseValue(13)
+	dh.GeneratePrivateValue()
+	dh.GeneratePublicValue()
+	dh.GenerateSharedPrivateKey(31)
+
+	fmt.Printf("\nDiffieHellman: %+v\n", dh)
+	return
 
 	host := fmt.Sprintf("http://%s:%d", ip, port)
 

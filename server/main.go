@@ -16,19 +16,6 @@ var CEILINGVALUE int = 50
 // RAND : Reconfigura Seed
 var RAND *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-func isPrime(value int) bool {
-	if value <= 1 {
-		return false
-	}
-
-	for i := 2; i < value; i++ {
-		if value%i == 0 {
-			return false
-		}
-	}
-	return true
-}
-
 // Body struct to get message from JSON decoder
 type Body struct {
 	Name    string `json:"name"`
@@ -60,14 +47,13 @@ func main() {
 	flag.Parse()
 
 	var dh DiffieHellman
-	dh.SetpModulusValue(CEILINGVALUE)
+	dh.GeneratepModulusValue(CEILINGVALUE)
 	dh.GenerategBaseValue()
 	dh.GeneratePrivateValue()
 	dh.GeneratePublicValue()
 	dh.GenerateSharedPrivateKey(10)
 
 	fmt.Printf("\nDiffieHellman: %+v\n", dh)
-
 	return
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
