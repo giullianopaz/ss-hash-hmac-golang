@@ -1,11 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"math/rand"
-	"net/http"
+	"net"
 	"os"
 	"time"
 )
@@ -16,11 +17,11 @@ var CEILINGVALUE int = 50
 // RAND : Reconfigura Seed
 var RAND *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-// Body struct to get message from JSON decoder
-type Body struct {
-	Name    string `json:"name"`
-	Message string `json:"message"`
-	HMAC    string `json:"hmac"`
+// Message struct to get message from JSON decoder
+type Message struct {
+	Name string `json:"name"`
+	Text string `json:"text"`
+	HMAC string `json:"hmac"`
 }
 
 // Check verifica a existência de erros
@@ -46,37 +47,40 @@ func main() {
 	flag.StringVar(&alg, "alg", "diffie-hellman", "Agoritmo para gerar a chave compartilhada")
 	flag.Parse()
 
-	var dh DiffieHellman
-	dh.GeneratepModulusValue(CEILINGVALUE)
-	dh.GenerategBaseValue()
-	dh.GeneratePrivateValue()
-	dh.GeneratePublicValue()
-	dh.GenerateSharedPrivateKey(10)
+	// var dh DiffieHellman
+	// dh.GeneratepModulusValue(CEILINGVALUE)
+	// dh.GenerategBaseValue()
+	// dh.GeneratePrivateValue()
+	// dh.GeneratePublicValue()
+	// dh.GenerateSharedPrivateKey(10)
 
-	fmt.Printf("\nDiffieHellman: %+v\n", dh)
-	return
+	// fmt.Printf("\nDiffieHellman: %+v\n", dh)
+	// return
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Launching server...")
 
-		if r.Method != "POST" {
-			w.WriteHeader(http.StatusMethodNotAllowed)
+	// listen on all interfaces
+	ln, err := net.Listen("tcp", ":8000")
+	Check(err, "Erro ao abrir a conexão!!")
+
+	// accept connection on port
+	conn, _ := ln.Accept()
+
+	// run loop forever (or until ctrl-c)
+	defer ln.Close()
+	for {
+		// will listen for message to process ending in newline (\n)
+		msg, _ := bufio.NewReader(conn).ReadString('\n')
+
+		if msg == "END\n" {
+			ln.Close()
 			return
 		}
-
-		decoder := json.NewDecoder(r.Body)
-		var body Body
-		err := decoder.Decode(&body)
-		if err != nil {
-			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-			w.Header().Set("Connection", "close")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		// w.Header().Set("Connection", "close")
-		fmt.Printf("%+v\n", body)
-	})
-
-	fmt.Println("[INFO] Running server on http://localhost:8000...")
-	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
-
+		var message Message
+		json.Unmarshal([]byte(msg), &message)
+		// output message received
+		fmt.Printf("\nMessage Received: %+v", message)
+		// send new string back to client
+		conn.Write([]byte("OK" + "\n"))
+	}
 }
