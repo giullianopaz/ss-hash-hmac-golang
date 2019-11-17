@@ -54,13 +54,17 @@ func (dh *DiffieHellman) SetgBaseValue(value int) {
 // GeneratePrivateValue : Gera valor secreto do servidor
 func (dh *DiffieHellman) GeneratePrivateValue() {
 	fmt.Print("-> Generating Private Value... ")
-	dh.privateValue = RAND.Intn(dh.pModulusValue)
+	dh.privateValue = 1 + RAND.Intn(dh.pModulusValue)
 	fmt.Println("OK")
 }
 
 // GeneratePublicValue : Gera valor público do servidor
 func (dh *DiffieHellman) GeneratePublicValue() {
 	fmt.Print("-> Generating Public Value... ")
+
+	fmt.Printf("\nmath.Mod(math.Pow(%f, %f), %f))\n",
+		float64(dh.gBaseValue), float64(dh.privateValue), float64(dh.pModulusValue))
+
 	dh.publicValue = int(
 		math.Mod(math.Pow(float64(dh.gBaseValue), float64(dh.privateValue)), float64(dh.pModulusValue)))
 	fmt.Println("OK")
@@ -69,9 +73,14 @@ func (dh *DiffieHellman) GeneratePublicValue() {
 // GenerateSharedPrivateKey : Gera chave privada compartilhada
 func (dh *DiffieHellman) GenerateSharedPrivateKey(sharedPublicValue int) {
 	fmt.Print("-> Generating Shared Private key... ")
+
+	fmt.Printf("\nmath.Mod(math.Pow(%f, %f), %f))\n",
+		float64(sharedPublicValue), float64(dh.privateValue), float64(dh.pModulusValue))
+
 	res := int(
 		math.Mod(math.Pow(float64(sharedPublicValue), float64(dh.privateValue)), float64(dh.pModulusValue)))
 
 	dh.sharedPrivateKey = getHash([]byte(string(res)))
+	// dh.sharedPrivateKey = res
 	fmt.Println("OK")
 }
