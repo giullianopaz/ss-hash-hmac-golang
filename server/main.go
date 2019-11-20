@@ -70,10 +70,10 @@ func main() {
 	flag.StringVar(&alg, "alg", "diffie-hellman", "Agoritmo para gerar a chave compartilhada")
 	flag.Parse()
 
-	fmt.Println("Launching server...")
+	fmt.Printf("Launching server at localhost:%d...", port)
 
 	// Inicia servidor na porta 8000
-	ln, err := net.Listen("tcp", ":8000")
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	Check(err, "Unable to run server!")
 
 	defer ln.Close()

@@ -97,7 +97,7 @@ func main() {
 	flag.Parse()
 
 	// Conecta ao Socket
-	conn, err := net.Dial("tcp", "127.0.0.1:8000")
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
 	Check(err, "Unable to connect to server!")
 
 	var dh DiffieHellman

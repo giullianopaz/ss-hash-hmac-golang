@@ -2,8 +2,12 @@
 
 ## Executar Servidor
 
-    $ go run server/main.go -name server_name -port 8000
+Acesse o diretório `server/`
+
+    $ go run main.go diffiehellman.go -name server_name -port 8000
 
 ## Executar o Cliente
 
-    $ go run client/main.go -name client_name -ip localhost -port 8000 -n_messages 100
+Acesse o diretório `client/`.
+
+    $ go run main.go diffiehellman.go -name client_name -ip localhost -port 8000 -n_messages 100
