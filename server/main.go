@@ -20,10 +20,13 @@ const (
 	OKCOLOR = "\033[1;32m-> OK:  %+v\033[0m\n\n"
 	// ERRORCOLOR : Para mostrar HMAC ERROR vermelho
 	ERRORCOLOR = "\033[1;31m-> HMAC ERROR: %+v\033[0m\n\n"
+	// NONCECOLOR : Para mostrar NONCE ERROR vermelho
+	NONCECOLOR = "\033[1;31m-> NONCE ERROR: %+v\033[0m\n\n"
 )
 
 // CEILINGVALUE : Valor máximo para ser usado como `pModulusValue`
-var CEILINGVALUE int = 20
+var CEILINGVALUE int = 1000
+var maxNonce = 10000
 
 // RAND : Reconfigura Seed
 var RAND *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -32,11 +35,11 @@ var RAND *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 type Message struct {
 	Name  string `json:"name"`
 	Text  string `json:"text"`
-	Nonce int    `json:"nonce"`
+	Nonce int64  `json:"nonce"`
 	HMAC  string `json:"hmac"`
 }
 
-//  HandShake : Struct para fazer o parse dos dados do handshake
+// HandShake : Struct para fazer o parse dos dados do handshake
 type HandShake struct {
 	Public int `json:"public"`
 }
@@ -50,7 +53,7 @@ func Check(err error, errMessage string) {
 }
 
 // GetHMAC ...
-func GetHMAC(privateKey string, name string, randString string, nonce int) string {
+func GetHMAC(privateKey string, name string, randString string, nonce int64) string {
 	hash := hmac.New(sha512.New, []byte(privateKey))
 	io.WriteString(hash, fmt.Sprintf("%s.%s.%d", name, randString, nonce))
 	return base64.URLEncoding.EncodeToString(hash.Sum(nil))
@@ -60,9 +63,10 @@ func main() {
 	fmt.Println("[INFO] Starting Server...")
 
 	var (
-		name string
-		port int
-		alg  string
+		name  string
+		port  int
+		alg   string
+		nonce int64 = 1000
 	)
 
 	flag.StringVar(&name, "name", "client_name", "Nome do Cliente")
@@ -96,8 +100,8 @@ func main() {
 					dh.GeneratePublicValue()
 
 					// Envia p, b e o valor público gerado
-					c.Write([]byte(fmt.Sprintf(`{"modulus": %d, "base": %d, "public": %d}`+"\n",
-						dh.pModulusValue, dh.gBaseValue, dh.publicValue)))
+					c.Write([]byte(fmt.Sprintf(`{"modulus": %d, "base": %d, "public": %d, "nonce": %d}`+"\n",
+						dh.pModulusValue, dh.gBaseValue, dh.publicValue, nonce)))
 					// Aguarda valor público do cliente
 					msg, err := bufio.NewReader(c).ReadString('\n')
 					Check(err, "Unable to get response from server!")
@@ -107,10 +111,6 @@ func main() {
 
 					dh.GenerateSharedPrivateKey(hs.Public)
 
-					fmt.Printf("\nDH: %+v\n", dh)
-
-					fmt.Printf("\nHS: %+v\n", hs)
-
 				} else if msg == "END\n" {
 					c.Close()
 					return
@@ -119,7 +119,16 @@ func main() {
 					json.Unmarshal([]byte(msg), &message)
 					// output message received
 
-					if GetHMAC(dh.sharedPrivateKey, message.Name, message.Text, message.Nonce) == message.HMAC {
+					if message.Nonce <= nonce {
+						fmt.Printf(NONCECOLOR, message)
+						c.Write([]byte("NONCE ERROR" + "\n"))
+						nonce += 10
+						continue
+					} else {
+						nonce = message.Nonce
+					}
+
+					if GetHMAC(dh.sharedPrivateKey, message.Name, message.Text, nonce) == message.HMAC {
 						fmt.Printf(OKCOLOR, message)
 						c.Write([]byte("OK" + "\n"))
 					} else {

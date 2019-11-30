@@ -36,7 +36,7 @@ const (
 type Message struct {
 	Name  string `json:"name"`
 	Text  string `json:"text"`
-	Nonce int    `json:"nonce"`
+	Nonce int64  `json:"nonce"`
 	HMAC  string `json:"hmac"`
 }
 
@@ -49,9 +49,10 @@ func (m Message) String() string {
 
 // HandShake : Struct para fazer o parse dos dados do handshake
 type HandShake struct {
-	Modulus int `json:"modulus"`
-	Base    int `json:"base"`
-	Public  int `json:"public"`
+	Modulus int   `json:"modulus"`
+	Base    int   `json:"base"`
+	Public  int   `json:"public"`
+	Nonce   int64 `json:"nonce"`
 }
 
 // GenerateRandString : Gera uma string pseudo-aleatória de tamanho n
@@ -64,7 +65,7 @@ func GenerateRandString(n int) string {
 }
 
 // GetHMAC : Gera o HMAC
-func GetHMAC(privateKey string, name string, randString string, nonce int) string {
+func GetHMAC(privateKey string, name string, randString string, nonce int64) string {
 	hash := hmac.New(sha512.New, []byte(privateKey))
 	io.WriteString(hash, fmt.Sprintf("%s.%s.%d", name, randString, nonce))
 	return base64.URLEncoding.EncodeToString(hash.Sum(nil))
@@ -117,18 +118,19 @@ func main() {
 	dh.GeneratePrivateValue()
 	dh.GeneratePublicValue()
 	dh.GenerateSharedPrivateKey(hs.Public)
+	nonce := hs.Nonce
 
-	// Testar se a chave privada compartilhada está gerando corretamente
-	// fmt.Printf("\nDH: %+v\n", dh)
-	// fmt.Printf("\nHS: %+v\n", hs)
+	// Descomente a linha de baixo para fazer dar erro no HMAC
+	// dh.GenerateSharedPrivateKey(4242)
 
 	// Envia valor público para o server
 	fmt.Fprintf(conn, fmt.Sprintf(`{"public": %d}`+"\n", dh.publicValue))
 
 	for i := 0; i < nMessages; i++ {
 		randString := GenerateRandString(lenMessages)
-		// TODO: Tornar o Nonce incremental
-		nonce := 4242
+
+		// Comente a linha de baixo para fazer dar erro no NONCE
+		nonce += 10
 
 		msg := &Message{
 			Name:  name,
@@ -136,6 +138,7 @@ func main() {
 			Nonce: nonce,
 			HMAC:  GetHMAC(dh.sharedPrivateKey, name, randString, nonce),
 		}
+
 		// Envia mensagem pro Server
 		fmt.Fprintf(conn, msg.String()+"\n")
 

@@ -4,7 +4,7 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"fmt"
-	"math"
+	"math/big"
 )
 
 func isPrime(value int) bool {
@@ -62,11 +62,14 @@ func (dh *DiffieHellman) GeneratePrivateValue() {
 func (dh *DiffieHellman) GeneratePublicValue() {
 	fmt.Print("-> Generating Public Value... ")
 
-	fmt.Printf("\nmath.Mod(math.Pow(%f, %f), %f))\n",
-		float64(dh.gBaseValue), float64(dh.privateValue), float64(dh.pModulusValue))
+	temp := new(big.Int)
+	temp = temp.Mod(
+		temp.Exp(
+			big.NewInt(int64(dh.gBaseValue)),
+			big.NewInt(int64(dh.privateValue)), nil),
+		big.NewInt(int64(dh.pModulusValue)))
 
-	dh.publicValue = int(
-		math.Mod(math.Pow(float64(dh.gBaseValue), float64(dh.privateValue)), float64(dh.pModulusValue)))
+	dh.publicValue = int(temp.Uint64())
 	fmt.Println("OK")
 }
 
@@ -74,11 +77,13 @@ func (dh *DiffieHellman) GeneratePublicValue() {
 func (dh *DiffieHellman) GenerateSharedPrivateKey(sharedPublicValue int) {
 	fmt.Print("-> Generating Shared Private key... ")
 
-	fmt.Printf("\nmath.Mod(math.Pow(%f, %f), %f))\n",
-		float64(sharedPublicValue), float64(dh.privateValue), float64(dh.pModulusValue))
-
-	res := int(
-		math.Mod(math.Pow(float64(sharedPublicValue), float64(dh.privateValue)), float64(dh.pModulusValue)))
+	temp := new(big.Int)
+	temp = temp.Mod(
+		temp.Exp(
+			big.NewInt(int64(sharedPublicValue)),
+			big.NewInt(int64(dh.privateValue)), nil),
+		big.NewInt(int64(dh.pModulusValue)))
+	res := int(temp.Uint64())
 
 	dh.sharedPrivateKey = getHash([]byte(string(res)))
 	// dh.sharedPrivateKey = res
