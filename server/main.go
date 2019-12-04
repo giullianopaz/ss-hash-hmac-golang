@@ -17,11 +17,11 @@ import (
 
 const (
 	// OKCOLOR : Para mostrar OK verde
-	OKCOLOR = "\033[1;32m-> OK:  %+v\033[0m\n\n"
+	OKCOLOR = "\033[1;32m[%d]-> OK:  %+v\033[0m\n\n"
 	// ERRORCOLOR : Para mostrar HMAC ERROR vermelho
-	ERRORCOLOR = "\033[1;31m-> HMAC ERROR: %+v\033[0m\n\n"
+	ERRORCOLOR = "\033[1;31m[%d]-> HMAC ERROR: %+v\033[0m\n\n"
 	// NONCECOLOR : Para mostrar NONCE ERROR vermelho
-	NONCECOLOR = "\033[1;31m-> NONCE ERROR: %+v\033[0m\n\n"
+	NONCECOLOR = "\033[1;31m[%d]-> NONCE ERROR: %+v\033[0m\n\n"
 )
 
 // CEILINGVALUE : Valor máximo para ser usado como `pModulusValue`
@@ -89,6 +89,7 @@ func main() {
 		// Roda concorrentemente cada nova conexão
 		go func(c net.Conn) {
 			var dh DiffieHellman
+			var count int = 0
 			for {
 				msg, err := bufio.NewReader(c).ReadString('\n')
 				Check(err, "Unable to get response from client!")
@@ -114,16 +115,18 @@ func main() {
 					dh.GenerateSharedPrivateKey(hs.Public)
 
 				} else if msg == "END\n" {
+					count = 0
 					c.Close()
 					return
 				} else {
+					count++
 					var message Message
 					err := json.Unmarshal([]byte(msg), &message)
 					Check(err, "Mensage parse error")
 					// output message received
 
 					if message.Nonce <= nonce {
-						fmt.Printf(NONCECOLOR, message)
+						fmt.Printf(NONCECOLOR, count, message)
 						_, err := c.Write([]byte("NONCE ERROR" + "\n"))
 						Check(err, "Unable to send NONCE ERROR to client")
 						nonce += 10
@@ -133,11 +136,11 @@ func main() {
 					}
 
 					if GetHMAC(dh.sharedPrivateKey, message.Name, message.Text, nonce) == message.HMAC {
-						fmt.Printf(OKCOLOR, message)
+						fmt.Printf(OKCOLOR, count, message)
 						_, err := c.Write([]byte("OK" + "\n"))
 						Check(err, "Unable to send OK to client")
 					} else {
-						fmt.Printf(ERRORCOLOR, message)
+						fmt.Printf(ERRORCOLOR, count, message)
 						_, err := c.Write([]byte("HMAC ERROR" + "\n"))
 						Check(err, "Unable to send HMAC ERROR to client")
 					}

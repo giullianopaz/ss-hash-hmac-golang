@@ -17,5 +17,5 @@ Acesse o diretório `client/`.
 
 Para testar os erros de `HMAC`, basta descomentar a linha 124 em `client/main.go`.
 
-Para testar os erros de `Nonce`, basta comentar a linha 133 em `client/main.go`.
+Para testar os erros de `Nonce`, basta comentar a linha 134 em `client/main.go`.
 
