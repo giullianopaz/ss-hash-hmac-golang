@@ -16,9 +16,6 @@ import (
 	"time"
 )
 
-// CEILINGVALUE : Valor máximo para ser usado como `pModulusValue`
-var CEILINGVALUE int = 20
-
 // RAND : Reconfigura Seed
 var RAND *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -104,14 +101,17 @@ func main() {
 	var dh DiffieHellman
 
 	// Inicia conexão com o Server enviando `INIT`
-	fmt.Fprintf(conn, "INIT"+"\n")
+	_, err = fmt.Fprintf(conn, "INIT"+"\n")
+	Check(err, "Unable to send INIT to server")
+
 	// Pega resposta
 	message, err := bufio.NewReader(conn).ReadString('\n')
 	Check(err, "Unable to get response from server!")
 
 	// Pega dados para iniciar o handshake
 	var hs HandShake
-	json.Unmarshal([]byte(strings.TrimRight(message, "\n")), &hs)
+	err = json.Unmarshal([]byte(strings.TrimRight(message, "\n")), &hs)
+	Check(err, "HandShake parse error")
 
 	dh.SetpModulusValue(hs.Modulus)
 	dh.SetgBaseValue(hs.Base)
@@ -124,7 +124,8 @@ func main() {
 	// dh.GenerateSharedPrivateKey(4242)
 
 	// Envia valor público para o server
-	fmt.Fprintf(conn, fmt.Sprintf(`{"public": %d}`+"\n", dh.publicValue))
+	_, err = fmt.Fprintf(conn, fmt.Sprintf(`{"public": %d}`+"\n", dh.publicValue))
+	Check(err, "Unable to send public key to server")
 
 	for i := 0; i < nMessages; i++ {
 		randString := GenerateRandString(lenMessages)
@@ -140,7 +141,8 @@ func main() {
 		}
 
 		// Envia mensagem pro Server
-		fmt.Fprintf(conn, msg.String()+"\n")
+		_, err := fmt.Fprintf(conn, msg.String()+"\n")
+		Check(err, "Unable to send message to server")
 
 		// Espera resposta
 		message, err := bufio.NewReader(conn).ReadString('\n')

@@ -25,7 +25,7 @@ const (
 )
 
 // CEILINGVALUE : Valor máximo para ser usado como `pModulusValue`
-var CEILINGVALUE int = 1000
+var CEILINGVALUE int = 100000
 var maxNonce = 10000
 
 // RAND : Reconfigura Seed
@@ -100,14 +100,16 @@ func main() {
 					dh.GeneratePublicValue()
 
 					// Envia p, b e o valor público gerado
-					c.Write([]byte(fmt.Sprintf(`{"modulus": %d, "base": %d, "public": %d, "nonce": %d}`+"\n",
+					_, err := c.Write([]byte(fmt.Sprintf(`{"modulus": %d, "base": %d, "public": %d, "nonce": %d}`+"\n",
 						dh.pModulusValue, dh.gBaseValue, dh.publicValue, nonce)))
+					Check(err, "Unable to send handshake info to client")
 					// Aguarda valor público do cliente
-					msg, err := bufio.NewReader(c).ReadString('\n')
-					Check(err, "Unable to get response from server!")
+					msg, err = bufio.NewReader(c).ReadString('\n')
+					Check(err, "Unable to get response from client!")
 
 					var hs HandShake
-					json.Unmarshal([]byte(msg), &hs)
+					err = json.Unmarshal([]byte(msg), &hs)
+					Check(err, "HandShake parse error")
 
 					dh.GenerateSharedPrivateKey(hs.Public)
 
@@ -116,12 +118,14 @@ func main() {
 					return
 				} else {
 					var message Message
-					json.Unmarshal([]byte(msg), &message)
+					err := json.Unmarshal([]byte(msg), &message)
+					Check(err, "Mensage parse error")
 					// output message received
 
 					if message.Nonce <= nonce {
 						fmt.Printf(NONCECOLOR, message)
-						c.Write([]byte("NONCE ERROR" + "\n"))
+						_, err := c.Write([]byte("NONCE ERROR" + "\n"))
+						Check(err, "Unable to send NONCE ERROR to client")
 						nonce += 10
 						continue
 					} else {
@@ -130,10 +134,12 @@ func main() {
 
 					if GetHMAC(dh.sharedPrivateKey, message.Name, message.Text, nonce) == message.HMAC {
 						fmt.Printf(OKCOLOR, message)
-						c.Write([]byte("OK" + "\n"))
+						_, err := c.Write([]byte("OK" + "\n"))
+						Check(err, "Unable to send OK to client")
 					} else {
 						fmt.Printf(ERRORCOLOR, message)
-						c.Write([]byte("HMAC ERROR" + "\n"))
+						_, err := c.Write([]byte("HMAC ERROR" + "\n"))
+						Check(err, "Unable to send HMAC ERROR to client")
 					}
 				}
 			}
